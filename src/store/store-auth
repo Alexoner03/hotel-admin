@@ -1,0 +1,54 @@
+import axios from 'axios'
+import links from '../constantes/url'
+
+const state = {
+  loggedIn: false
+}
+const mutations = {
+  setLoggedIn(state, value){
+    state.loggedIn = value
+  }
+}
+const actions = {
+  async loginUser({commit}, payload){
+      const {url, headers} = links.auth
+      try {
+        const data = await axios({
+          method : 'POST',
+          url,
+          headers,
+          data : new URLSearchParams({
+            'username': payload.user,
+            'password': payload.password,
+            'grant_type': 'password'
+          }),
+        })
+        console.log(data)
+      }catch (e) {
+        console.error(e)
+      }
+  },
+  logoutUser({commit}){
+    commit('setLoggedIn', false);
+    localStorage.setItem('loggedIn', false)
+  },
+  handleAuthStateChange({commit, dispatch}){
+      if(localStorage.getItem('loggedIn')){
+        commit('setLoggedIn', true)
+        localStorage.setItem('loggedIn', true)
+      }else{
+        commit('setLoggedIn', false);
+        localStorage.setItem('loggedIn', false)
+      }
+  }
+}
+const getters = {
+
+}
+export default {
+  namespaced: true,
+  state,
+  mutations,
+  actions,
+  getters
+}
