@@ -2,18 +2,43 @@ import axios from 'axios'
 import links from '../constantes/url'
 
 const state = {
-  loggedIn: false
+  loggedIn: false,
+  access_token: null,
+  email: null,
+  expires_in: 0,
+  firstName: null,
+  jti: null,
+  lastName: null,
+  refresh_token: null,
+  scope: null,
+  token_type: null
 }
 const mutations = {
   setLoggedIn(state, value){
     state.loggedIn = value
+    localStorage.setItem('loggedIn', true)
+  },
+  setUserLogged(state, value){
+    state.access_token = value.access_token,
+    state.email = value.email,
+    state.expires_in = value.expires_in,
+    state.firstName = value.firstName,
+    state.jti = value.jti,
+    state.lastName = value.lastName,
+    state.refresh_token = value.refresh_token,
+    state.scope = value.scope,
+    state.token_typ = value.token_type
+
+    localStorage.setItem('refresh_token', value.refresh_token)
+
   }
 }
 const actions = {
+
   async loginUser({commit}, payload){
       const {url, headers} = links.auth
       try {
-        const data = await axios({
+        const response = await axios({
           method : 'POST',
           url,
           headers,
@@ -23,22 +48,62 @@ const actions = {
             'grant_type': 'password'
           }),
         })
-        console.log(data)
+        const { status , data } = response
+
+        if(status === 200){
+          commit('setLoggedIn', true);
+          commit('setUserLogged', data)
+        }
       }catch (e) {
         console.error(e)
       }
   },
+
+  async reLoginUser({commit,dispatch},token){
+    const {url, headers} = links.auth
+    try {
+      const response = await axios({
+        method : 'POST',
+        url,
+        headers,
+        data : new URLSearchParams({
+          'refresh_token' : token,
+          'grant_type': 'refresh_token'
+        }),
+      })
+      const { status , data } = response
+
+      if(status === 200){
+        commit('setLoggedIn', true);
+        commit('setUserLogged', data)
+      }
+    }catch (e) {
+      console.error(e)
+      dispatch('logoutUser')
+    }
+  },
+
   logoutUser({commit}){
     commit('setLoggedIn', false);
-    localStorage.setItem('loggedIn', false)
+    commit('setUserLogged', {
+      access_token: null,
+      email: null,
+      expires_in: 0,
+      firstName: null,
+      jti: null,
+      lastName: null,
+      refresh_token: null,
+      scope: null,
+      token_type: null
+    });
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('loggedIn')
   },
-  handleAuthStateChange({commit, dispatch}){
-      if(localStorage.getItem('loggedIn')){
-        commit('setLoggedIn', true)
-        localStorage.setItem('loggedIn', true)
-      }else{
-        commit('setLoggedIn', false);
-        localStorage.setItem('loggedIn', false)
+
+  async checkAuth({dispatch}){
+      const token = localStorage.getItem('refresh_token')
+      if(localStorage.getItem('loggedIn')  && localStorage.getItem('refresh_token')){
+        await dispatch('reLoginUser',token)
       }
   }
 }

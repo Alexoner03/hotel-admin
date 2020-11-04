@@ -4,12 +4,21 @@
   </div>
 </template>
 <script>
-import { mapActions } from "vuex";
+import { mapActions,mapState } from "vuex";
 
 export default {
   name: 'App',
-  methods:{
-    ...mapActions('auth', ['handleAuthStateChange'])
+  async created() {
+    await this.checkAuth()
+    if(!this.loggedIn){
+      await this.$router.replace("/login")
+    }
   },
+  computed : {
+    ...mapState('auth',['loggedIn'])
+  },
+  methods : {
+    ...mapActions('auth', ['checkAuth'])
+  }
 }
 </script>
