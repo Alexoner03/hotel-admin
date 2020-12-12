@@ -1,115 +1,141 @@
 import axios from 'axios'
 import links from '../constantes/url'
+const getUserData = async (token) => {
+  const {url, headers} = links.user
+  try {
+
+    const response = await axios({
+      url,
+      headers: {
+        ...headers,
+        'Authorization': `Bearer ${token}`
+      },
+    })
+
+    const {status, data} = response
+
+    if (status === 200 && data.res) {
+      return data.data
+    }
+    return false
+  } catch (err) {
+    console.error(err)
+    return false
+  }
+}
+
 
 const state = {
   loggedIn: false,
-  access_token: null,
+  token: null,
   email: null,
-  expires_in: 0,
-  firstName: null,
-  jti: null,
-  lastName: null,
-  refresh_token: null,
-  scope: null,
-  token_type: null
+  nombres: null,
+  apellidos: null,
+  registrado: null,
+  rolId: null,
+  rol: null,
+  id: null,
 }
 const mutations = {
-  setLoggedIn(state, value){
+  setLoggedIn(state, value) {
     state.loggedIn = value
     localStorage.setItem('loggedIn', true)
   },
-  setUserLogged(state, value){
-    state.access_token = value.access_token,
-    state.email = value.email,
-    state.expires_in = value.expires_in,
-    state.firstName = value.firstName,
-    state.jti = value.jti,
-    state.lastName = value.lastName,
-    state.refresh_token = value.refresh_token,
-    state.scope = value.scope,
-    state.token_typ = value.token_type
+  resetState(state){
+    state.token = null
+    state.email = null
+    state.nombres = null
+    state.apellidos = null
+    state.registrado = null
+    state.id = null
+    state.rolId = null
+    state.rol = null
+  },
+  setUserLogged(state, {user, token}) {
+    state.token = token
+    state.email = user.email
+    state.nombres = user.nombres
+    state.apellidos = user.apellidos
+    state.registrado = user.created_at
+    state.id = user.id
+    state.rolId = user.role.id
+    state.rol = user.role.descripcion
 
-    localStorage.setItem('refresh_token', value.refresh_token)
+    localStorage.setItem('token', token)
 
   }
 }
 const actions = {
 
-  async loginUser({commit}, payload){
-      const {url, headers} = links.auth
-      try {
-        const response = await axios({
-          method : 'POST',
-          url,
-          headers,
-          data : new URLSearchParams({
-            'username': payload.user,
-            'password': payload.password,
-            'grant_type': 'password'
-          }),
-        })
-        const { status , data } = response
-
-        if(status === 200){
-          commit('setLoggedIn', true);
-          commit('setUserLogged', data)
-        }
-      }catch (e) {
-        console.error(e)
-      }
-  },
-
-  async reLoginUser({commit,dispatch},token){
+  async loginUser({commit}, payload) {
     const {url, headers} = links.auth
     try {
       const response = await axios({
-        method : 'POST',
+        method: 'POST',
         url,
         headers,
-        data : new URLSearchParams({
-          'refresh_token' : token,
-          'grant_type': 'refresh_token'
+        data: JSON.stringify({
+          "email": payload.email,
+          "password": payload.password
         }),
       })
-      const { status , data } = response
+      const {status, data} = response
 
-      if(status === 200){
-        commit('setLoggedIn', true);
-        commit('setUserLogged', data)
+      if (status === 200 && data.res) {
+        const user = await getUserData(data.token)
+        if (user) {
+          commit('setLoggedIn', true);
+          commit('setUserLogged', {user, token: data.token});
+        }
       }
-    }catch (e) {
+    } catch (e) {
       console.error(e)
-      dispatch('logoutUser')
     }
   },
+  async logoutUser({commit,state}) {
+    const {url, headers} = links.logout
+    try {
+      const response = await axios({
+        url,
+        headers: {
+          ...headers,
+          'Authorization': `Bearer ${state.token}`
+        },
+      })
 
-  logoutUser({commit}){
-    commit('setLoggedIn', false);
-    commit('setUserLogged', {
-      access_token: null,
-      email: null,
-      expires_in: 0,
-      firstName: null,
-      jti: null,
-      lastName: null,
-      refresh_token: null,
-      scope: null,
-      token_type: null
-    });
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('loggedIn')
-  },
+      const {status, data} = response
 
-  async checkAuth({dispatch}){
-      const token = localStorage.getItem('refresh_token')
-      if(localStorage.getItem('loggedIn')  && localStorage.getItem('refresh_token')){
-        await dispatch('reLoginUser',token)
+      if (status === 200 && data.res) {
+        commit('setLoggedIn', false);
+        commit('resetState');
+        localStorage.removeItem('loggedIn')
+        localStorage.removeItem('token')
+        return data.message
       }
+      return false
+    } catch (err) {
+      console.error(err)
+      return false
+    }
+  },
+  async checkAuth({commit}){
+    const token = localStorage.getItem('token')
+    const logged = localStorage.getItem('loggedIn')
+    if(token && logged){
+      const user = await getUserData(token)
+      if(user){
+        commit('setUserLogged', {user, token});
+        commit('setLoggedIn', true);
+      }else{
+        localStorage.removeItem('token')
+        localStorage.removeItem('loggedIn')
+        commit('resetState')
+      }
+    }
   }
-}
-const getters = {
 
 }
+const getters = {}
 export default {
   namespaced: true,
   state,

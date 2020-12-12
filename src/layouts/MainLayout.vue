@@ -6,10 +6,10 @@
         <q-btn dense flat round icon="menu" @click="drawer = !drawer" />
 
         <q-toolbar-title>
-          <q-avatar>
-            <img src="../assets/icons/cake.svg">
-          </q-avatar>
-          DON PASTEL
+          <q-avatar size="4rem">
+            <img src="../assets/icons/logo-white.svg">
+          </q-avatar> &nbsp;
+          CONTROL DE NOTAS
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
@@ -42,23 +42,13 @@
             </q-item-section>
           </q-item>
 
-          <q-item to="/products" exact clickable v-ripple>
+          <q-item to="/courses" exact clickable v-ripple>
             <q-item-section avatar>
               <q-icon name="storefront" color="secondary"/>
             </q-item-section>
 
             <q-item-section>
-              PRODUCTOS
-            </q-item-section>
-          </q-item>
-
-          <q-item to="/orders" exact clickable v-ripple>
-            <q-item-section avatar>
-              <q-icon name="receipt" color="secondary"/>
-            </q-item-section>
-
-            <q-item-section>
-              PEDIDOS
+              CURSOS
             </q-item-section>
           </q-item>
 
@@ -79,7 +69,7 @@
           <q-avatar size="56px" class="q-mb-sm">
             <img src="../assets/img/pedrito.jpg">
           </q-avatar>
-          <div class="text-weight-bold">{{ firstName }}</div>
+          <div class="text-weight-bold">{{ nombres ? nombres : 'Usuario' }}</div>
           <div>@administrador</div>
         </div>
       </q-img>
@@ -102,6 +92,7 @@
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import {QSpinnerCube} from "quasar";
 export default {
   name :'mainLayout',
   data () {
@@ -111,14 +102,25 @@ export default {
     }
   },
   methods : {
-    logout(){
-      this.logoutUser()
-      this.$router.replace('/login')
+    async logout(){
+      const dialog = this.$q.dialog({
+        title: 'Cerrando Sesión',
+        message: 'Espere por favor',
+        progress: {
+          spinner: QSpinnerCube,
+          color: 'primary'
+        },
+        persistent: true, // we want the user to not be able to close it
+        ok: false // we want the user to not be able to close it
+      })
+      await this.logoutUser()
+      dialog.hide()
+      await this.$router.replace('/login')
     },
     ...mapActions('auth',['logoutUser'])
   },
   computed : {
-    ...mapState('auth',['firstName','lastName'])
+    ...mapState('auth',['nombres'])
   }
 }
 </script>

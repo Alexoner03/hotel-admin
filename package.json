@@ -1,8 +1,8 @@
 {
   "name": "donpastel",
   "version": "0.0.1",
-  "description": "Aplicacion para DWS2",
-  "productName": "DonPastel",
+  "description": "Aplicación para DAM2",
+  "productName": "Control_Notas",
   "author": "Alexoner03 <undergrounder16@gmail.com>",
   "private": true,
   "scripts": {

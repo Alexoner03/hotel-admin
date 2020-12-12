@@ -2,60 +2,29 @@
   <q-page class="q-pa-lg">
     <h1 class="text-h4 q-ma-none">Mantenimiento de usuarios</h1>
     <hr>
+    <q-btn color="primary" icon="add" label="NUEVO USUARIO" @click="toggleRegisterModal"/>
 
-    <q-table
-      class="firstColumnSticky q-mt-lg"
-      :data="data"
-      :columns="columns"
-      row-key="name"
-      :filter="filter"
-    >
-      <template v-slot:top>
-        <q-btn color="primary" icon="add" label="NUEVO ENLACE" @click="toggleRegisterModal"/>
-        <q-space />
-        <q-input borderless dense debounce="300" color="primary" v-model="filter">
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </template>
-
-      <template v-slot:header="props">
-        <q-tr :props="props">
-          <q-th auto-width>Opciones</q-th>
-          <q-th
-            v-for="col in props.cols"
-            :key="col.name"
-            :props="props"
-          >
-            {{ col.label }}
-          </q-th>
-        </q-tr>
-      </template>
-
-      <template v-slot:body="props">
-        <q-tr :props="props">
-          <q-td auto-width>
-            <q-btn class="q-mr-sm" size="sm" color="positive" round dense icon="edit" @click="toggleEditModal(props.row)" />
-            <q-btn class="q-mr-sm" size="sm" color="negative" round dense icon="close" />
-          </q-td>
-          <q-td
-            v-for="col in props.cols"
-            :key="col.name"
-            :props="props"
-          >
-            {{ col.value }}
-          </q-td>
-        </q-tr>
-      </template>
-    </q-table>
+    <users-table
+      :columns="columnsAlumno"
+      :data="dataAlumno"
+      @onClickEdit="toggleEditModal"
+      @onClickDelete="confirmDelete"
+      title="Alumnos"
+    />
+    <users-table
+      :columns="columnsDocente"
+      :data="dataDocente"
+      @onClickEdit="toggleEditModal"
+      @onClickDelete="confirmDelete"
+      title="Docentes"
+    />
 
     <q-dialog v-model="register" persistent>
-      <user-form @onClose="toggleRegisterModal"/>
+      <user-form @onReload="reload" @onClose="toggleRegisterModal"/>
     </q-dialog>
 
     <q-dialog v-model="edit" persistent>
-      <user-form @onClose="toggleEditModal" :edit="true" :user-to-edit="userToEdit" />
+      <user-form @onReload="reload" @onClose="toggleEditModal" :edit="true" :user-to-edit="userToEdit" :id-user="userSelected"/>
     </q-dialog>
 
   </q-page>
@@ -63,90 +32,75 @@
 
 <script>
 import UserForm from 'components/forms/UserForm'
+import links from '../constantes/url'
+import {mapState} from 'vuex'
+import UsersTable from "components/UsersTable";
+import {QSpinnerCube} from "quasar";
+
 export default {
   name: "Users",
   components : {
-    UserForm
+    UserForm,
+    UsersTable
+  },
+  created() {
+    let interval = setInterval(_ => {
+      if(this.token !== null){
+        this.getData('alumno')
+        this.getData('docente')
+        clearInterval(interval)
+      }
+    },100)
   },
   data() {
     return {
-      filter: '',
-      columns: [
+      columnsAlumno: [
         {
           name: 'id',
           required: true,
           label: 'ID',
           field: 'id',
-          sortable: true
         },
         {
-          name: 'first_name',
-          label: 'NOMBRES',
-          field: 'first_name',
-          sortable: true
+          name: 'codigo',
+          label: 'CODIGO',
+          field: row => row.student.codigo,
         },
-        { name: 'last_name', label: 'APELLIDOS', field: 'last_name', sortable: true },
-        { name: 'enabled', label: 'ESTADO', field: 'enabled', format : val => val ? 'HABILITADO' : 'DESHABILITADO' },
+        { name: 'nombres', label: 'NOMBRES', field: 'nombres'},
+        { name: 'apellidos', label: 'APELIIDOS', field: 'apellidos'},
         { name: 'email', label: 'CORREO', field: 'email' },
-        { name: 'address', label: 'DIRECCIÓN', field: 'address' },
-        { name: 'roles', label: 'ROLES', field: 'roles' },
-
+        { name: 'created_at', label: 'FEC. REGISTRO', field: 'created_at' },
+        { name: 'role', label: 'ROL', field: row => row.role.descripcion },
       ],
-      data: [
-        {
-          id: 1,
-          first_name: 'Ciro Julio',
-          last_name: 'ALgun Apellido',
-          enabled: true,
-          email: 'correo@correo.com',
-          address: 'Jr Calle de por ahi 123',
-          roles: 'rol1, rol2, rol3'
-        },
-        {
-          id: 2,
-          first_name: 'Ciro Juli2',
-          last_name: 'ALgun Apellid2',
-          enabled: true,
-          email: 'corre2@correo.com',
-          address: 'Jr Calle de por ahi 122',
-          roles: 'rol1, rol2, rol3'
-        },
-        {
-          id: 3,
-          first_name: 'Ciro Juli3',
-          last_name: 'ALgun Apellid3',
-          enabled: true,
-          email: 'corre3@correo.com',
-          address: 'Jr Calle de por ahi 123',
-          roles: 'rol1, rol2, rol3'
-        },
-        {
-          id: 4,
-          first_name: 'Ciro Juli4',
-          last_name: 'ALgun Apellid4',
-          enabled: true,
-          email: 'corre4@correo.com',
-          address: 'Jr Calle de por ahi 124',
-          roles: 'rol1, rol2, rol3'
-        },
-        {
-          id: 5,
-          first_name: 'Ciro Juli5',
-          last_name: 'ALgun Apellid5',
-          enabled: true,
-          email: 'corre5@correo.com',
-          address: 'Jr Calle de por ahi 125',
-          roles: 'rol1, rol2, rol3'
-        },
+      dataAlumno: [],
 
+      columnsDocente: [
+        {
+          name: 'id',
+          required: true,
+          label: 'ID',
+          field: 'id',
+        },
+        {
+          name: 'codigo',
+          label: 'CODIGO',
+          field: row => row.teacher.codigo,
+        },
+        { name: 'nombres', label: 'NOMBRES', field: 'nombres'},
+        { name: 'apellidos', label: 'APELIIDOS', field: 'apellidos'},
+        { name: 'email', label: 'CORREO', field: 'email' },
+        { name: 'created_at', label: 'FEC. REGISTRO', field: 'created_at' },
+        { name: 'role', label: 'ROL', field: row => row.role.descripcion },
       ],
+      dataDocente: [],
 
       //register Dialog
       register : false,
 
       //edit Dialog
       edit : false,
-      userToEdit  : null
+      userToEdit  : null,
+      userSelected : null
     }
   },
   methods : {
@@ -156,22 +110,82 @@ export default {
     toggleEditModal(row){
       if(!this.edit){
         this.userToEdit = {
-          address: row.address,
           email: row.email,
-          enabled: row.enabled,
-          first_name: row.first_name,
-          id: row.id,
-          last_name: row.last_name,
-          roles: row.roles
+          password: null,
+          nombres: row.nombres,
+          apellidos: row.apellidos,
+          role_id: row.role.id,
         }
+        this.userSelected = row.id
       }else{
         this.userToEdit = null
+        this.userSelected = null
       }
       this.edit = !this.edit
+    },
+    async getData(role){
+      const {headers,url} = links.listUsersByRol(role,this.token)
+      try {
+        const {status,data} = await this.$axios.get(url,{headers})
+        if(status === 200){
+          role === 'alumno' ? this.dataAlumno = data : this.dataDocente = data
+        }
+      }catch(error){
+        console.error(error)
+      }
+    },
+    confirmDelete(row){
+      this.$q.dialog({
+        title: 'Confirmar Eliminación',
+        message: `Desea dar de baja al usuario ${row.nombres} ${row.apellidos}`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => {
+        this.deleteUser(row.id,row.role.id)
+      })
+    },
+    async deleteUser(id,rol){
+      const {url,headers} = links.deleteUserUrl(id,this.token)
+      const dialog = this.$q.dialog({
+        title: 'Eliminando',
+        message: 'Espere por favor',
+        progress: {
+          spinner: QSpinnerCube,
+          color: 'primary'
+        },
+        persistent: true, // we want the user to not be able to close it
+        ok: false // we want the user to not be able to close it
+      })
+      try {
+        const {status,data} = await this.$axios.delete(url,{headers})
+        if(status === 200){
+          rol === 3 ? this.getData('alumno') : this.getData('docente')
+          this.$q.notify({
+            message: data.message,
+            icon: 'announcement',
+            color : 'positive'
+          })
+          dialog.hide()
+        }
+      }catch (error) {
+        this.$q.notify({
+          message: 'Ocurrió un error',
+          icon: 'close',
+          color : 'negative'
+        })
+        dialog.hide()
+      }
+    },
+    async reload(rol_id){
+      rol_id === 3 ? this.getData('alumno') : this.getData('docente')
     }
+  },
+  computed : {
+    ...mapState('auth',['token'])
   }
 }
 </script>
+
 <style lang="sass">
 .firstColumnSticky
   max-width: 100%

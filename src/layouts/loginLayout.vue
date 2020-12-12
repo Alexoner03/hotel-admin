@@ -4,9 +4,10 @@
     <q-header class="bg-primary" elevated>
       <q-toolbar>
         <q-toolbar-title>
-          <q-avatar>
-            <img src="../assets/icons/cake.svg">
-          </q-avatar> &nbsp; <span style="font-weight: 900">DON PASTEL</span>
+          <q-avatar size="4rem">
+            <img src="../assets/icons/logo-white.svg">
+          </q-avatar> &nbsp;
+          <span style="font-weight: 900">CONTROL DE NOTAS</span>
         </q-toolbar-title>
       </q-toolbar>
     </q-header>

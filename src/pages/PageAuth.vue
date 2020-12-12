@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md flex flex-center bg-wall" style="height:92.4vh; overflow-y: hidden">
-    <particles-bg color="#827560" num="2" type="fountain" :bg="true" />
+    <particles-bg color="#004165" num="10" type="square" :bg="true"/>
     <div class="full-width flex justify-between items-center q-px-xl">
       <div style="width: 75%">
         <transition
@@ -22,16 +22,16 @@
             class="bg-transparent"
           >
             <q-carousel-slide :name="1" class="text-white flex items-center">
-              <p class="caruP">Pide tu torta Favorita</p>
+              <p class="caruP">CONTROL DE NOTAS</p>
             </q-carousel-slide>
             <q-carousel-slide :name="2" class="text-white flex items-center">
-              <p class="caruP">Facil y Rapido</p>
+              <p class="caruP">ADMINISTRADOR</p>
             </q-carousel-slide>
             <q-carousel-slide :name="3" class="text-white flex items-center">
-              <p class="caruP">Pide tu postre Favorito</p>
+              <p class="caruP">LOS MEJORES DOCENTES</p>
             </q-carousel-slide>
             <q-carousel-slide :name="4" class="text-white flex items-center">
-              <p class="caruP">Conoce nuestro market</p>
+              <p class="caruP">CIBERTEC :)</p>
             </q-carousel-slide>
           </q-carousel>
         </transition>
@@ -39,9 +39,11 @@
       <form @submit.prevent="submitForm" style="width: 25%">
         <div class="bodyLogin q-pa-lg rounded-borders float-left">
           <p class="font-bold text-white">INICIO DE SESIÓN</p>
-          <q-input input-class="text-white" label-color="white" v-model="formData.user" label="Ingrese Usuario"></q-input>
-          <q-input input-class="text-white" label-color="white" class="q-mb-md" type="password" v-model="formData.password" label="Ingrese password"></q-input>
-          <q-btn type="submit"  color="primary" class="float-right">Ingresar</q-btn>
+          <q-input type="email" input-class="text-white" label-color="white" v-model="formData.email"
+                   label="Ingrese Email"></q-input>
+          <q-input input-class="text-white" label-color="white" class="q-mb-md" type="password"
+                   v-model="formData.password" label="Ingrese password"></q-input>
+          <q-btn type="submit" color="primary" class="float-right">Ingresar</q-btn>
         </div>
       </form>
     </div>
@@ -49,8 +51,9 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "vuex";
-import { ParticlesBg } from "particles-bg-vue";
+import {mapActions, mapState} from "vuex";
+import {ParticlesBg} from "particles-bg-vue";
+import { QSpinnerCube } from 'quasar'
 
 export default {
   name: "PageAuth",
@@ -59,19 +62,32 @@ export default {
   },
   data() {
     return {
-      formData: {user: 'admin', password: 'password'},
+      formData: {email: 'administrador@test.com', password: 'password'},
       slide: 1,
       autoplay: 5000
     }
   },
-  methods:{
+  methods: {
     ...mapActions('auth', ['loginUser']),
-    async submitForm(){
+    async submitForm() {
+      const dialog = this.$q.dialog({
+        title: 'Iniciando Sesión',
+        message: 'Espere por favor',
+        progress: {
+          spinner: QSpinnerCube,
+          color: 'primary'
+        },
+        persistent: true, // we want the user to not be able to close it
+        ok: false // we want the user to not be able to close it
+      })
+
       await this.loginUser(this.formData)
 
-      if(this.loggedIn){
+      if (this.loggedIn) {
+        dialog.hide()
         await this.$router.replace("/")
-      }else{
+      } else {
+        dialog.hide()
         this.$q.notify({
           color: 'red-5',
           textColor: 'white',
@@ -79,7 +95,7 @@ export default {
           message: 'Credenciales incorrectas'
         })
       }
-    }
+    },
   },
   computed: {
     ...mapState('auth', ['loggedIn'])
@@ -88,18 +104,21 @@ export default {
 </script>
 
 <style scoped>
-.bodyLogin{
+.bodyLogin {
   background: rgba(26, 25, 25, 0.5);
 }
-.caruP{
+
+.caruP {
   font-size: 5rem;
   font-weight: 900;
   text-transform: uppercase;
 }
-.inputStyle{
+
+.inputStyle {
   font-size: 2rem;
 }
-.font-bold{
+
+.font-bold {
   font-weight: bold;
 }
 </style>
