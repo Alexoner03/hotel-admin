@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-lg">
-    <h1 class="text-h4 q-ma-none">Mantenimiento de usuarios</h1>
+    <h1 class="text-h4 q-ma-none">Mantenimiento de Clientes Normales</h1>
     <hr />
 
     <div class="q-my-md flex items-center">
@@ -8,7 +8,7 @@
         class="q-mr-md"
         color="positive"
         icon="add"
-        label="NUEVO USUARIO"
+        label="NUEVO CLIENTE"
         @click="register = !register"
       />
 
@@ -17,7 +17,7 @@
         :disable="selected.length === 0"
         color="warning"
         icon="edit"
-        label="EDITAR USUARIO"
+        label="EDITAR CLIENTE"
         @click="openEditForm"
       />
 
@@ -26,7 +26,7 @@
         :disable="selected.length === 0"
         color="negative"
         icon="edit"
-        label="ELIMINAR USUARIO"
+        label="ELIMINAR CLIENTE"
         @click="confirmDelete"
       />
     </div>
@@ -42,11 +42,11 @@
 
     <!-- MODALS  -->
     <q-dialog v-model="register" persistent>
-      <form-user @onSuccess="transactionSuccess" @onError="transactionError" />
+      <form-client-normal @onSuccess="transactionSuccess" @onError="transactionError" />
     </q-dialog>
 
     <q-dialog v-model="edit" persistent>
-      <form-user
+      <form-client-normal
         :formData="userToEdit"
         @onSuccess="transactionSuccess"
         @onError="transactionError"
@@ -57,12 +57,12 @@
 
 <script>
 import links from "../constantes/url";
-import FormUser from "src/components/users/FormUser.vue";
+import FormClientNormal from "src/components/clients/FormClientNormal";
 import { QSpinnerCube } from "quasar";
 
 export default {
-  components: { FormUser },
-  name: "Users",
+  components: { FormClientNormal },
+  name: "ClientsNormals",
   created() {
     let interval = setInterval(_ => {
       if (localStorage.getItem("token")) {
@@ -108,7 +108,6 @@ export default {
           label: "Dirección",
           field: row => row.person.address
         },
-        { name: "rol", label: "Rol", field: row => row.role.description }
       ],
       users: [],
       selected: [],
@@ -124,7 +123,7 @@ export default {
   methods: {
     async getData() {
       this.loading = true;
-      const { headers, url } = links.listUsers;
+      const { headers, url } = links.listNormalClients;
       try {
         const { status, data } = await this.$axios.get(url, { headers });
         if (status === 200) {
@@ -140,7 +139,7 @@ export default {
       this.$q
         .dialog({
           title: "Confirmar Eliminación",
-          message: `Desea dar de baja al usuario ${user.person.name} ${user.person.first_lastname}`,
+          message: `Desea dar de baja al cliente ${user.person.name} ${user.person.first_lastname}`,
           cancel: true,
           persistent: true
         })
@@ -149,7 +148,7 @@ export default {
         });
     },
     async deleteUser(id) {
-      const { url, headers } = links.deleteUserUrl(id);
+      const { url, headers } = links.deleteClientUrl(id);
       const dialog = this.$q.dialog({
         title: "Eliminando",
         message: "Espere por favor",
@@ -166,8 +165,8 @@ export default {
           await this.getData();
           this.$q.notify({
             message: data.message,
-            icon: "announcement",
             position : 'top-right',
+            icon: "announcement",
             color: "positive"
           });
           dialog.hide();
@@ -184,7 +183,6 @@ export default {
     },
     openEditForm(){
       this.userToEdit = {
-        admin : this.selected[0].role === 1,
         name : this.selected[0].person.name,
         sex : this.selected[0].person.sex,
         cellphone : this.selected[0].person.cellphone,

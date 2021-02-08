@@ -12,7 +12,6 @@
           <q-carousel
             animated
             v-model="slide"
-            navigation
             infinite
             :autoplay="autoplay"
             :arrows="false"
@@ -22,16 +21,16 @@
             class="bg-transparent"
           >
             <q-carousel-slide :name="1" class="text-white flex items-center">
-              <p class="caruP">CONTROL DE NOTAS</p>
+              <p class="caruP">HOTEL</p>
             </q-carousel-slide>
             <q-carousel-slide :name="2" class="text-white flex items-center">
               <p class="caruP">ADMINISTRADOR</p>
             </q-carousel-slide>
             <q-carousel-slide :name="3" class="text-white flex items-center">
-              <p class="caruP">LOS MEJORES DOCENTES</p>
+              <p class="caruP">LOS MEJORES SERVICIOS</p>
             </q-carousel-slide>
             <q-carousel-slide :name="4" class="text-white flex items-center">
-              <p class="caruP">CIBERTEC :)</p>
+              <p class="caruP">AQUÍ :)</p>
             </q-carousel-slide>
           </q-carousel>
         </transition>
@@ -39,7 +38,7 @@
       <form @submit.prevent="submitForm" style="width: 25%">
         <div class="bodyLogin q-pa-lg rounded-borders float-left">
           <p class="font-bold text-white">INICIO DE SESIÓN</p>
-          <q-input type="email" input-class="text-white" label-color="white" v-model="formData.email"
+          <q-input type="email" input-class="text-white" label-color="white" v-model="formData.user_name"
                    label="Ingrese Email"></q-input>
           <q-input input-class="text-white" label-color="white" class="q-mb-md" type="password"
                    v-model="formData.password" label="Ingrese password"></q-input>
@@ -62,7 +61,7 @@ export default {
   },
   data() {
     return {
-      formData: {email: 'administrador@test.com', password: 'password'},
+      formData: {user_name: 'correo@correo.com', password: 'password'},
       slide: 1,
       autoplay: 5000
     }

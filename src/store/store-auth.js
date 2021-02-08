@@ -15,7 +15,16 @@ const getUserData = async (token) => {
     const {status, data} = response
 
     if (status === 200 && data.res) {
-      return data.data
+
+      return {
+        email: data.data.user_name,
+        nombres: data.data.person.name,
+        apellidos: `${data.data.person.first_lastname} ${data.data.person.second_lastname}`,
+        registrado: data.data.person.created_at,
+        id : data.detail.id,
+        rolId : data.detail.role_id,
+        rol : data.detail.role_id === 1 ? 'ADMINISTRADOR' : 'RECEPCIONISTA',
+      }
     }
     return false
   } catch (err) {
@@ -27,7 +36,6 @@ const getUserData = async (token) => {
 
 const state = {
   loggedIn: false,
-  token: null,
   email: null,
   nombres: null,
   apellidos: null,
@@ -42,7 +50,6 @@ const mutations = {
     localStorage.setItem('loggedIn', true)
   },
   resetState(state){
-    state.token = null
     state.email = null
     state.nombres = null
     state.apellidos = null
@@ -52,14 +59,13 @@ const mutations = {
     state.rol = null
   },
   setUserLogged(state, {user, token}) {
-    state.token = token
     state.email = user.email
     state.nombres = user.nombres
     state.apellidos = user.apellidos
-    state.registrado = user.created_at
+    state.registrado = user.registrado
     state.id = user.id
-    state.rolId = user.role.id
-    state.rol = user.role.descripcion
+    state.rolId = user.rolId
+    state.rol = user.rol
 
     localStorage.setItem('token', token)
 
@@ -75,7 +81,7 @@ const actions = {
         url,
         headers,
         data: JSON.stringify({
-          "email": payload.email,
+          "user_name": payload.user_name,
           "password": payload.password
         }),
       })
@@ -99,7 +105,7 @@ const actions = {
         url,
         headers: {
           ...headers,
-          'Authorization': `Bearer ${state.token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       })
 

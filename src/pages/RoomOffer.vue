@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-lg">
-    <h1 class="text-h4 q-ma-none">Mantenimiento de usuarios</h1>
+    <h1 class="text-h4 q-ma-none">Mantenimiento de Ofertas</h1>
     <hr />
 
     <div class="q-my-md flex items-center">
@@ -8,7 +8,7 @@
         class="q-mr-md"
         color="positive"
         icon="add"
-        label="NUEVO USUARIO"
+        label="NUEVA OFERTA"
         @click="register = !register"
       />
 
@@ -17,7 +17,7 @@
         :disable="selected.length === 0"
         color="warning"
         icon="edit"
-        label="EDITAR USUARIO"
+        label="EDITAR OFERTA"
         @click="openEditForm"
       />
 
@@ -26,28 +26,47 @@
         :disable="selected.length === 0"
         color="negative"
         icon="edit"
-        label="ELIMINAR USUARIO"
+        label="ELIMINAR OFERTA"
         @click="confirmDelete"
       />
     </div>
 
     <q-table
-      :data="users"
+      :data="offers"
       :columns="columns"
       row-key="id"
       selection="single"
       :selected.sync="selected"
       :loading="loading"
-    />
+    >
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td>
+            <q-checkbox v-model="props.selected" />
+          </q-td>
+
+          <q-td v-for="col in props.cols" :key="col.name" :props="props">
+            <span v-if="col.name !== 'image'">
+              {{ col.value }}
+            </span>
+            <q-img
+              v-else
+              :src="col.value"
+              style="height: 140px; max-width: 150px"
+            />
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
 
     <!-- MODALS  -->
     <q-dialog v-model="register" persistent>
-      <form-user @onSuccess="transactionSuccess" @onError="transactionError" />
+      <form-offer @onSuccess="transactionSuccess" @onError="transactionError" />
     </q-dialog>
 
     <q-dialog v-model="edit" persistent>
-      <form-user
-        :formData="userToEdit"
+      <form-offer
+        :formData="offerToEdit"
         @onSuccess="transactionSuccess"
         @onError="transactionError"
       />
@@ -57,60 +76,42 @@
 
 <script>
 import links from "../constantes/url";
-import FormUser from "src/components/users/FormUser.vue";
+import FormOffer from "src/components/rooms/FormOffer.vue";
 import { QSpinnerCube } from "quasar";
+import moment from 'moment'
 
 export default {
-  components: { FormUser },
-  name: "Users",
+  components: { FormOffer },
+  name: "RoomsOffer",
   created() {
     let interval = setInterval(_ => {
       if (localStorage.getItem("token")) {
         this.getData();
         clearInterval(interval);
       }
-    }, 100);
+    }, 200);
   },
   data() {
     return {
-
-      loading : false,
+      loading: true,
 
       //table
       columns: [
-        { name: "id", label: "Codigo", field: row => row.id },
-        { name: "name", label: "Nombre", field: row => row.person.name },
-        { name: "sex", label: "Sexo", field: row => row.person.sex },
+        { name: "id", label: "Codigo", field: "id" },
+        { name: "name", label: "Nombre", field: "name" },
+        { name: "price", label: "Precio", field: "price" },
+        { name: "description", label: "Descripción", field: "description" },
+        { name: "from", label: "Desde", field: "from" },
+        { name: "to", label: "Hasta", field: "to" },
+        { name: "type_room_id", label: "Tipo de Habitación", field: row => row.type_room.name },
         {
-          name: "cellphone",
-          label: "Celular",
-          field: row => row.person.cellphone
-        },
-        { name: "dni", label: "Dni", field: row => row.person.dni },
-        {
-          name: "first_lastname",
-          label: "Ap Pat",
-          field: row => row.person.first_lastname
-        },
-        {
-          name: "second_lastname",
-          label: "Ap Mat",
-          field: row => row.person.second_lastname
-        },
-        {
-          name: "birthday",
-          label: "Fec Nac",
-          field: row => row.person.birthday
-        },
-        { name: "email", label: "Email", field: row => row.person.email },
-        {
-          name: "address",
-          label: "Dirección",
-          field: row => row.person.address
-        },
-        { name: "rol", label: "Rol", field: row => row.role.description }
+          name: "image",
+          label: "Foto",
+          field: row => row.image,
+          format: val => `${links.baseUrl}/${val}`
+        }
       ],
-      users: [],
+      offers: [],
       selected: [],
 
       //register Dialog
@@ -118,17 +119,17 @@ export default {
 
       //edit Dialog
       edit: false,
-      userToEdit : null
+      offerToEdit: null
     };
   },
   methods: {
     async getData() {
       this.loading = true;
-      const { headers, url } = links.listUsers;
+      const { headers, url } = links.listOffers;
       try {
         const { status, data } = await this.$axios.get(url, { headers });
         if (status === 200) {
-          this.users = data.data;
+          this.offers = data.data;
         }
       } catch (error) {
         console.error(error);
@@ -136,20 +137,20 @@ export default {
       this.loading = false;
     },
     confirmDelete() {
-      const user = this.selected[0];
+      const offer = this.selected[0];
       this.$q
         .dialog({
           title: "Confirmar Eliminación",
-          message: `Desea dar de baja al usuario ${user.person.name} ${user.person.first_lastname}`,
+          message: `Desea dar de baja la oferta ${offer.id}`,
           cancel: true,
           persistent: true
         })
         .onOk(() => {
-          this.deleteUser(user.id);
+          this.deleteOffer(offer.id);
         });
     },
-    async deleteUser(id) {
-      const { url, headers } = links.deleteUserUrl(id);
+    async deleteOffer(id) {
+      const { url, headers } = links.deleteOfferUrl(id);
       const dialog = this.$q.dialog({
         title: "Eliminando",
         message: "Espere por favor",
@@ -167,7 +168,7 @@ export default {
           this.$q.notify({
             message: data.message,
             icon: "announcement",
-            position : 'top-right',
+            position: "top-right",
             color: "positive"
           });
           dialog.hide();
@@ -175,32 +176,27 @@ export default {
       } catch (error) {
         this.$q.notify({
           message: "Ocurrió un error",
-          position : 'top-right',
+          position: "top-right",
           icon: "close",
           color: "negative"
         });
         dialog.hide();
       }
     },
-    openEditForm(){
-      this.userToEdit = {
-        admin : this.selected[0].role === 1,
-        name : this.selected[0].person.name,
-        sex : this.selected[0].person.sex,
-        cellphone : this.selected[0].person.cellphone,
-        dni : this.selected[0].person.dni,
-        first_lastname : this.selected[0].person.first_lastname,
-        second_lastname : this.selected[0].person.second_lastname,
-        birthday : this.selected[0].person.birthday,
-        email : this.selected[0].person.email,
-        address : this.selected[0].person.address,
-        id : this.selected[0].id
-      }
-      this.edit = true
+    openEditForm() {
+      this.offerToEdit = {
+        id: this.selected[0].id,
+        name: this.selected[0].name,
+        description: this.selected[0].description,
+        from: moment(this.selected[0].from).format('YYYY/MM/DD'),
+        to: moment(this.selected[0].to).format('YYYY/MM/DD'),
+        price: this.selected[0].price,
+        type_room_id : this.selected[0].type_room.id,
+      };
+      this.edit = true;
     },
     async transactionSuccess({ form, data }) {
-
-      this.getData()
+      this.getData();
 
       form === "create" ? (this.register = false) : (this.edit = false);
 
@@ -209,10 +205,9 @@ export default {
         message: data.message,
         position: "top-right"
       });
-
     },
     transactionError(data) {
-      this.getData()
+      this.getData();
       console.error("[Error en request]", data.message);
       this.$root.$children[0].errorHandler(data.errors);
     }

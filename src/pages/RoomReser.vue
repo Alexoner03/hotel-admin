@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-lg">
-    <h1 class="text-h4 q-ma-none">Mantenimiento de usuarios</h1>
+    <h1 class="text-h4 q-ma-none">Mantenimiento de Reservas</h1>
     <hr />
 
     <div class="q-my-md flex items-center">
@@ -8,7 +8,7 @@
         class="q-mr-md"
         color="positive"
         icon="add"
-        label="NUEVO USUARIO"
+        label="NUEVA RESERVA"
         @click="register = !register"
       />
 
@@ -17,7 +17,7 @@
         :disable="selected.length === 0"
         color="warning"
         icon="edit"
-        label="EDITAR USUARIO"
+        label="EDITAR RESERVA"
         @click="openEditForm"
       />
 
@@ -26,13 +26,13 @@
         :disable="selected.length === 0"
         color="negative"
         icon="edit"
-        label="ELIMINAR USUARIO"
+        label="ELIMINAR RESERVA"
         @click="confirmDelete"
       />
     </div>
 
     <q-table
-      :data="users"
+      :data="reservations"
       :columns="columns"
       row-key="id"
       selection="single"
@@ -42,12 +42,19 @@
 
     <!-- MODALS  -->
     <q-dialog v-model="register" persistent>
-      <form-user @onSuccess="transactionSuccess" @onError="transactionError" />
+      <form-reser
+        :rooms="rooms"
+        :clients="clients"
+        @onSuccess="transactionSuccess"
+        @onError="transactionError"
+      />
     </q-dialog>
 
     <q-dialog v-model="edit" persistent>
-      <form-user
-        :formData="userToEdit"
+      <form-reser
+        :rooms="rooms"
+        :clients="clients"
+        :formData="reservationToEdit"
         @onSuccess="transactionSuccess"
         @onError="transactionError"
       />
@@ -56,61 +63,42 @@
 </template>
 
 <script>
+import Moment from "moment";
 import links from "../constantes/url";
-import FormUser from "src/components/users/FormUser.vue";
+import FormReser from "src/components/rooms/FormReser.vue";
 import { QSpinnerCube } from "quasar";
 
 export default {
-  components: { FormUser },
-  name: "Users",
+  components: { FormReser },
+  name: "Reservations",
   created() {
     let interval = setInterval(_ => {
       if (localStorage.getItem("token")) {
         this.getData();
+        this.getRooms();
+        this.getClients();
         clearInterval(interval);
       }
     }, 100);
   },
   data() {
     return {
-
-      loading : false,
+      loading: false,
 
       //table
       columns: [
-        { name: "id", label: "Codigo", field: row => row.id },
-        { name: "name", label: "Nombre", field: row => row.person.name },
-        { name: "sex", label: "Sexo", field: row => row.person.sex },
+        { name: "id", label: "Codigo", field: "id" },
         {
-          name: "cellphone",
-          label: "Celular",
-          field: row => row.person.cellphone
+          name: "client",
+          label: "Cliente",
+          field: row =>
+            `${row.client.person.name} ${row.client.person.first_lastname} ${row.client.person.second_lastname}`
         },
-        { name: "dni", label: "Dni", field: row => row.person.dni },
-        {
-          name: "first_lastname",
-          label: "Ap Pat",
-          field: row => row.person.first_lastname
-        },
-        {
-          name: "second_lastname",
-          label: "Ap Mat",
-          field: row => row.person.second_lastname
-        },
-        {
-          name: "birthday",
-          label: "Fec Nac",
-          field: row => row.person.birthday
-        },
-        { name: "email", label: "Email", field: row => row.person.email },
-        {
-          name: "address",
-          label: "Dirección",
-          field: row => row.person.address
-        },
-        { name: "rol", label: "Rol", field: row => row.role.description }
+        { name: "from", label: "Desde", field: "from" },
+        { name: "to", label: "Hasta", field: "to" },
+        { name: "room", label: "Habitacion", field: row => row.room.number }
       ],
-      users: [],
+      reservations: [],
       selected: [],
 
       //register Dialog
@@ -118,17 +106,48 @@ export default {
 
       //edit Dialog
       edit: false,
-      userToEdit : null
+      reservationToEdit: null,
+
+      //roomList
+      rooms: [],
+      clients: []
     };
   },
   methods: {
-    async getData() {
-      this.loading = true;
-      const { headers, url } = links.listUsers;
+    async getRooms() {
+      const { headers, url } = links.listRooms;
       try {
         const { status, data } = await this.$axios.get(url, { headers });
         if (status === 200) {
-          this.users = data.data;
+          this.rooms = data.data.map(room => {
+            return {
+              label: room.number,
+              value: room.id
+            };
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async getClients() {
+      const { headers, url } = links.listAllMappeds;
+      try {
+        const { status, data } = await this.$axios.get(url, { headers });
+        if (status === 200) {
+          this.clients = data;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async getData() {
+      this.loading = true;
+      const { headers, url } = links.listReservations;
+      try {
+        const { status, data } = await this.$axios.get(url, { headers });
+        if (status === 200) {
+          this.reservations = data.data;
         }
       } catch (error) {
         console.error(error);
@@ -136,20 +155,20 @@ export default {
       this.loading = false;
     },
     confirmDelete() {
-      const user = this.selected[0];
+      const reserva = this.selected[0];
       this.$q
         .dialog({
           title: "Confirmar Eliminación",
-          message: `Desea dar de baja al usuario ${user.person.name} ${user.person.first_lastname}`,
+          message: `Desea eliminar la reserva ${reserva.id} `,
           cancel: true,
           persistent: true
         })
         .onOk(() => {
-          this.deleteUser(user.id);
+          this.deleteReservation(reserva.id);
         });
     },
-    async deleteUser(id) {
-      const { url, headers } = links.deleteUserUrl(id);
+    async deleteReservation(id) {
+      const { url, headers } = links.deleteReservationUrl(id);
       const dialog = this.$q.dialog({
         title: "Eliminando",
         message: "Espere por favor",
@@ -167,7 +186,7 @@ export default {
           this.$q.notify({
             message: data.message,
             icon: "announcement",
-            position : 'top-right',
+            position: "top-right",
             color: "positive"
           });
           dialog.hide();
@@ -175,32 +194,25 @@ export default {
       } catch (error) {
         this.$q.notify({
           message: "Ocurrió un error",
-          position : 'top-right',
+          position: "top-right",
           icon: "close",
           color: "negative"
         });
         dialog.hide();
       }
     },
-    openEditForm(){
-      this.userToEdit = {
-        admin : this.selected[0].role === 1,
-        name : this.selected[0].person.name,
-        sex : this.selected[0].person.sex,
-        cellphone : this.selected[0].person.cellphone,
-        dni : this.selected[0].person.dni,
-        first_lastname : this.selected[0].person.first_lastname,
-        second_lastname : this.selected[0].person.second_lastname,
-        birthday : this.selected[0].person.birthday,
-        email : this.selected[0].person.email,
-        address : this.selected[0].person.address,
-        id : this.selected[0].id
-      }
-      this.edit = true
+    openEditForm() {
+      this.reservationToEdit = {
+        id: this.selected[0].id,
+        from: Moment(this.selected[0].from).format( "YYYY/MM/DD"),
+        to: Moment(this.selected[0].to).format("YYYY/MM/DD"),
+        room_id: this.selected[0].room_id,
+        client_id: this.selected[0].client_id
+      };
+      this.edit = true;
     },
     async transactionSuccess({ form, data }) {
-
-      this.getData()
+      this.getData();
 
       form === "create" ? (this.register = false) : (this.edit = false);
 
@@ -209,10 +221,9 @@ export default {
         message: data.message,
         position: "top-right"
       });
-
     },
     transactionError(data) {
-      this.getData()
+      this.getData();
       console.error("[Error en request]", data.message);
       this.$root.$children[0].errorHandler(data.errors);
     }

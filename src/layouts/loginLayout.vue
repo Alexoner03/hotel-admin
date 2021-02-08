@@ -5,9 +5,9 @@
       <q-toolbar>
         <q-toolbar-title>
           <q-avatar size="4rem">
-            <img src="../assets/icons/logo-white.svg">
+            <q-icon name="fas fa-hotel" />
           </q-avatar> &nbsp;
-          <span style="font-weight: 900">CONTROL DE NOTAS</span>
+          <span style="font-weight: 900">HOTEL-ADMINISTRADOR</span>
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
